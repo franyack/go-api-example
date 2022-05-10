@@ -9,7 +9,6 @@ import (
 	apierrors "go-api-example/internal/infraestructure/delivery/webapi/utils"
 	"io/ioutil"
 	"net/http"
-	"os"
 )
 
 func NewMeliApiItemsService() gateway.ItemsService {
@@ -23,18 +22,19 @@ func (m *meliApiItemsService) GetItemById(itemID string) (*domain.Item, error) {
 	url := fmt.Sprintf("https://api.mercadolibre.com/items/%s", itemID)
 	response, err := http.Get(url)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		log.Error(err.Error())
+		return nil, apierrors.NewInternalServerApiError("error getting api information", err)
 	}
 
 	responseData, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return nil, apierrors.NewInternalServerApiError("error reading response body", err)
 	}
 
 	var item *domain.Item
 	if errUnmarshal := json.Unmarshal(responseData, &item); errUnmarshal != nil {
+		log.Error(errUnmarshal)
 		return nil, apierrors.NewInternalServerApiError("error unmarshalling response", errUnmarshal)
 	}
 
