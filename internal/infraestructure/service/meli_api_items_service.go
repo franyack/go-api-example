@@ -3,12 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	log "github.com/sirupsen/logrus"
 	"go-api-example/internal/business/domain"
 	"go-api-example/internal/business/gateway"
 	apierrors "go-api-example/internal/infraestructure/delivery/webapi/utils"
-	"io/ioutil"
-	"net/http"
 )
 
 func NewMeliApiItemsService() gateway.ItemsService {
@@ -30,6 +31,14 @@ func (m *meliApiItemsService) GetItemById(itemID string) (*domain.Item, error) {
 	if err != nil {
 		log.Error(err)
 		return nil, apierrors.NewInternalServerApiError("error reading response body", err)
+	}
+	if response.StatusCode != http.StatusOK {
+		apiErr, err := apierrors.NewApiErrorFromBytes(responseData)
+		if err != nil {
+			log.Error(err)
+			return nil, apierrors.NewInternalServerApiError("unmarshal error response has failed", err)
+		}
+		return nil, apierrors.NewApiError(apiErr.Message(), response.Status, response.StatusCode, apiErr.Cause())
 	}
 
 	var item *domain.Item
